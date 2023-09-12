@@ -67,7 +67,7 @@ public class MJPEGClient extends JFrame {
                                 }
                             }
 
-                            if(contentType != null){
+                            if(contentType != null && contentType.equals("image/jpeg")){
 
                                 byte[] jpegData = new byte[contentLength];
                                 // copy initial data

@@ -16,6 +16,9 @@ public class Main {
         SwingUtilities.invokeLater(() -> {
             String streamURL = "http://192.168.137.8:8040/stream";
              new MJPEGClient(streamURL);
+
+
+
         });
 
         CameraSettings cameraSettings = new CameraSettings();
