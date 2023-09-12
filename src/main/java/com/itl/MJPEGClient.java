@@ -9,20 +9,22 @@ import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.*;
 
 public class MJPEGClient extends JFrame {
-    private JLabel videoLabel;
+  //  private JLabel videoLabel;
     private BufferedImage currentImage;
     private static String frameBoundary = "--jpgboundary\r\n";
 
-    public MJPEGClient(String streamURL) {
-        setTitle("MJPEG Client");
-        setSize(1200, 960);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    private MjpegStream mjpegStreamListener;
 
-        videoLabel = new JLabel();
-        add(videoLabel);
-
-        setVisible(true); // Make the frame visible
-
+    public MJPEGClient(String streamURL, StreamEvents streamEvents) {
+//        setTitle("MJPEG Client");
+//        setSize(1200, 960);
+//        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//
+//        videoLabel = new JLabel();
+//        add(videoLabel);
+//
+//        setVisible(true); // Make the frame visible
+        this.mjpegStreamListener = streamEvents;
         // Run the stream fetching logic in a background thread
         Thread streamThread = new Thread(() -> fetchAndDisplayMJPEGStream(streamURL));
         streamThread.start();
@@ -112,9 +114,12 @@ public class MJPEGClient extends JFrame {
 
     private void repaintLabel() {
         if (currentImage != null) {
-            videoLabel.setIcon(new ImageIcon(currentImage));
-            videoLabel.repaint();
-            revalidate();
+           // videoLabel.setIcon(new ImageIcon(currentImage));
+            //videoLabel.repaint();
+           // revalidate();
+
+            mjpegStreamListener.NewFrame(currentImage);
+
         }
     }
 
