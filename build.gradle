@@ -12,7 +12,6 @@ repositories {
 dependencies {
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
     implementation 'io.github.icusystem:icu-api-connect:1.1.+'
-   // implementation 'org.apache.commons:commons-imaging:1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 }
