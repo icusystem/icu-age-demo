@@ -5,6 +5,8 @@ import io.github.icusystem.icu_connect.LocalAPIListener;
 import io.github.icusystem.icu_connect.api_icu.*;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
@@ -39,7 +41,7 @@ public class Main implements MjpegStream, LocalAPIListener {
 
 
         //Create and set up the window.
-        JFrame frame = new JFrame("ICU");
+        JFrame frame = new JFrame("ICU Age Threshold");
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new FlowLayout(FlowLayout.LEFT,20,10));
@@ -72,7 +74,23 @@ public class Main implements MjpegStream, LocalAPIListener {
         panel.setBackground(Color.WHITE);
         SpinnerNumberModel spinnerNumberModel = new SpinnerNumberModel(thresholdAge,1,100,1);
         ageSpinner = new JSpinner(spinnerNumberModel);
+        ageSpinner.setFont(new Font("Arial", Font.BOLD, 32)); // Set font
+        ageSpinner.setBorder(new EmptyBorder(5, 10, 5, 10));
+        ageSpinner.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Center the text in the editor component
+        JComponent editor = ageSpinner.getEditor();
+        if (editor instanceof JSpinner.DefaultEditor) {
+            JSpinner.DefaultEditor defaultEditor = (JSpinner.DefaultEditor) editor;
+            JTextField textField = defaultEditor.getTextField();
+            textField.setHorizontalAlignment(JTextField.CENTER);
+            // Hide the caret
+            textField.setCaret(new HiddenCaret());
+        }
+
         JLabel splable = new JLabel("Threshold Age: ");
+
+
         panel.add(splable);
         panel.add(ageSpinner);
 
@@ -101,6 +119,15 @@ public class Main implements MjpegStream, LocalAPIListener {
         connect.SetMode(ICURunMode.AGE_ONLY);
 
     }
+
+
+    class HiddenCaret extends DefaultCaret {
+        @Override
+        public void paint(Graphics g) {
+            // Override paint method to do nothing (hide caret)
+        }
+    }
+
 
 
     public static void main(String[] args) {
@@ -155,6 +182,10 @@ public class Main implements MjpegStream, LocalAPIListener {
         if(streamClient != null){
             streamClient.stopStream();
         }
+        SwingUtilities.invokeLater(()->{
+            labelInfo.setText(message);
+        });
+
 
 
 
@@ -163,7 +194,7 @@ public class Main implements MjpegStream, LocalAPIListener {
     public void ICUReady(){
 
         /* we do not want to display the result box on the stream */
-        connect.SetMode(ICURunMode.STREAM_FACE_BOX_OFF);
+        connect.SetMode(ICURunMode.STREAM_FACE_BOX_ON);
 
 
         /* Create a new steam client for the ICU camera view */
@@ -214,7 +245,20 @@ public class Main implements MjpegStream, LocalAPIListener {
             });
         }
 
+        // show any reason available for face rejected
+        if(!frameCounts.get(0).FaceReject.equals("")) {
+            SwingUtilities.invokeLater(()->{
+               labelInfo.setText(frameCounts.get(0).FaceReject);
+            });
+        }else{
+            SwingUtilities.invokeLater(()->{
+                labelInfo.setText("");
+            });
+        }
+
     }
+
+
 
 
 
