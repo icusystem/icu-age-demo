@@ -3,27 +3,35 @@ package com.itl;
 import io.github.icusystem.icu_connect.Connect;
 import io.github.icusystem.icu_connect.LocalAPIListener;
 import io.github.icusystem.icu_connect.api_icu.*;
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
 
+
 public class Main implements MjpegStream, LocalAPIListener {
     private Connect connect;
+
+    /*  ICU connection parameters - set these to your ICU device settings  */
     private static final String streamURL = "http://192.168.137.8:8040/stream";
     private static final String icuIPAddress = "192.168.137.8";
     private static final boolean icuSSL = true;
     private static final String icuUserName = "apiuser";
     private static final String icuPassword = "apipassword";
-
+    /*  --------------------------------------------------------------------- */
     private int thresholdAge = 25;
+
+    /* UI objects for global access  */
     private JLabel labelInfo;
     private JLabel label;
     private JLabel labelResult;
+    private JTable infoTable;
+    private DefaultTableModel tableModel;
     private JSpinner ageSpinner;
     private ImageIcon imageIcon;
     private MJPEGClient streamClient;
@@ -31,11 +39,42 @@ public class Main implements MjpegStream, LocalAPIListener {
 
 
 
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            Main main = new Main();
+            main.createAndShowGUI();
+            main.startICU();
+
+        });
+
+
+    }
+
+
+    /**
+     * void function to initialise and start the ICU device
+     */
+    private void startICU(){
+
+        /* Setup and start the ICU*/
+        CameraSettings cameraSettings = new CameraSettings();
+        cameraSettings.Rotation = 0;
+        cameraSettings.Camera_distance = 2;
+        cameraSettings.Spoof_level = 0;
+
+        connect = new Connect(cameraSettings,icuIPAddress,icuSSL,icuUserName,icuPassword);
+        /* Start the Connect, passing the event listener object */
+        connect.Start("Main",this,false);
+        /* Set the operation mode - AGE_ONLY in this example */
+        connect.SetMode(ICURunMode.AGE_ONLY);
+
+    }
 
 
 
     /**
-     *
+     * void to create and format the UI and display it
      */
     private void createAndShowGUI() {
 
@@ -68,10 +107,26 @@ public class Main implements MjpegStream, LocalAPIListener {
         labelResult.setPreferredSize(new Dimension(320,240));
         frame.getContentPane().add(labelResult);
 
+        JPanel icuPanel = new JPanel();
+        icuPanel.setPreferredSize(new Dimension(320,240));
+        icuPanel.setBackground(Color.WHITE);
+        icuPanel.setLayout(new BorderLayout());
 
-        JPanel panel = new JPanel();
-        panel.setPreferredSize(new Dimension(320,240));
-        panel.setBackground(Color.WHITE);
+        String[] columnName = {"Item","Value"};
+        infoTable = new JTable();
+        infoTable.setRowHeight(30);
+        tableModel = new DefaultTableModel(columnName, 0);
+        infoTable.setModel(tableModel);
+        // Create a custom cell renderer to center-align the text in the second column (Name column)
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER); // Set text alignment to center
+        infoTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer); // Apply renderer to the second column
+        icuPanel.add(infoTable);
+        frame.getContentPane().add(icuPanel);
+
+        JPanel ageThresholdPanel = new JPanel();
+        ageThresholdPanel.setPreferredSize(new Dimension(320,240));
+        ageThresholdPanel.setBackground(Color.WHITE);
         SpinnerNumberModel spinnerNumberModel = new SpinnerNumberModel(thresholdAge,1,100,1);
         ageSpinner = new JSpinner(spinnerNumberModel);
         ageSpinner.setFont(new Font("Arial", Font.BOLD, 32)); // Set font
@@ -87,15 +142,11 @@ public class Main implements MjpegStream, LocalAPIListener {
             // Hide the caret
             textField.setCaret(new HiddenCaret());
         }
+        JLabel ageThresholdLabel = new JLabel("Threshold Age: ");
+        ageThresholdPanel.add(ageThresholdLabel);
+        ageThresholdPanel.add(ageSpinner);
+        frame.getContentPane().add(ageThresholdPanel);
 
-        JLabel splable = new JLabel("Threshold Age: ");
-
-
-        panel.add(splable);
-        panel.add(ageSpinner);
-
-
-        frame.getContentPane().add(panel);
 
         frame.setSize(900,600);
 
@@ -103,20 +154,6 @@ public class Main implements MjpegStream, LocalAPIListener {
         imageIcon = new ImageIcon();
         //Display the window.
         frame.setVisible(true);
-
-
-
-        /* Setup and start the ICU*/
-        CameraSettings cameraSettings = new CameraSettings();
-        cameraSettings.Rotation = 0;
-        cameraSettings.Camera_distance = 2;
-        cameraSettings.Spoof_level = 0;
-
-        connect = new Connect(cameraSettings,icuIPAddress,icuSSL,icuUserName,icuPassword);
-        /* Start the Connect, passing the event listener object */
-        connect.Start("Main",this,false);
-        /* Set the operation mode - AGE_ONLY in this example */
-        connect.SetMode(ICURunMode.AGE_ONLY);
 
     }
 
@@ -127,24 +164,6 @@ public class Main implements MjpegStream, LocalAPIListener {
             // Override paint method to do nothing (hide caret)
         }
     }
-
-
-
-    public static void main(String[] args) {
-
-        SwingUtilities.invokeLater(() -> {
-            Main main = new Main();
-            main.createAndShowGUI();
-
-        });
-
-
-    }
-
-
-
-
-
 
 
     /**
@@ -171,10 +190,27 @@ public class Main implements MjpegStream, LocalAPIListener {
 
         SwingUtilities.invokeLater(()->{
             labelInfo.setText(icuDevice.deviceDetail.DeviceName + " connected.");
+            Camera cam = icuDevice.deviceSettings.Cameras.get(0);
+
+            tableModel.addRow(new Object[]{"ICU name",icuDevice.deviceDetail.DeviceName});
+            tableModel.addRow(new Object[]{"ICU ID",icuDevice.deviceDetail.DeviceId});
+            tableModel.addRow(new Object[]{"ICU Type",icuDevice.deviceDetail.DeviceType});
+            tableModel.addRow(new Object[]{"Build version",icuDevice.deviceDetail.SWBuildVersion});
+            tableModel.addRow(new Object[]{"Camera",cam.Name});
+            tableModel.addRow(new Object[]{"Resolution",cam.Resolution});
+            tableModel.addRow(new Object[]{"AAE",String.valueOf(!cam.Face_rec_en)});
+            tableModel.addRow(new Object[]{"Spoof detection",String.valueOf(cam.Spoof_level > 0)});
+            tableModel.addRow(new Object[]{"View mode",cam.View_mode});
+
+            infoTable.repaint();
+
         });
 
     }
 
+    /**
+     * @param message
+     */
     @Override
     public void ICUDisconnected(String message){
         System.out.println("dis-connected " + message);
@@ -194,7 +230,7 @@ public class Main implements MjpegStream, LocalAPIListener {
     public void ICUReady(){
 
         /* we do not want to display the result box on the stream */
-        connect.SetMode(ICURunMode.STREAM_FACE_BOX_ON);
+        connect.SetMode(ICURunMode.STREAM_FACE_BOX_OFF);
 
 
         /* Create a new steam client for the ICU camera view */
@@ -248,7 +284,7 @@ public class Main implements MjpegStream, LocalAPIListener {
         // show any reason available for face rejected
         if(!frameCounts.get(0).FaceReject.equals("")) {
             SwingUtilities.invokeLater(()->{
-               labelInfo.setText(frameCounts.get(0).FaceReject);
+               labelInfo.setText("*" + frameCounts.get(0).FaceReject);
             });
         }else{
             SwingUtilities.invokeLater(()->{
